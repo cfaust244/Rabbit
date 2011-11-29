@@ -67,6 +67,7 @@ isInstalled areInstalled toCheck =  do x <- areInstalled
                                        if elem toCheck (dropEveryOther (words (unwords (splitOn ":" x)))) then return True else return False
 
 -- Function to remove every other element from a list, used to remove the version when needed
+dropEveryOther :: [a] -> [a]
 dropEveryOther [] = []
 dropEveryOther (x:xs)
                 | null xs = x:[]
