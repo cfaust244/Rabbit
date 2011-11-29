@@ -1,0 +1,12 @@
+Description:
+The Rabbit package manager is designed to simplify the installation of OSX Applications (.app). 
+At this time it isn't designed to install more typical *nix software. The source based 
+package managers can already do that. 
+
+License:
+Rabbit is licensed under the GNU GPL v3, which can be located here: http://www.gnu.org/copyleft/gpl.html
+
+Usage:
+
+Author:
+Cody Faust <cfaust244@gmail.com>
