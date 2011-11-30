@@ -7,6 +7,8 @@ import System.Environment
 import System.IO
 import Data.List.Split
 import Data.Maybe
+import Utilities
+import FileIO
 import SystemLevel
 
 
@@ -66,25 +68,18 @@ help = do putStrLn "install application... installs the application or applicati
 
 
 
--- Reads the carrots.list file and returns an IO String for whatever needs it
--- TODO: Make more generic so it works on more than one file? 
-readAvailible :: IO String
-readAvailible =  do contents <- readFile "carrots.list"
-                    return contents
-
-
-
--- Reads the installed.list file and returns an IO String for whatever needs it
-readInstalled :: IO String
-readInstalled =  do contents <- readFile "installed.list"
-                    return contents
-
-
-
 -- Lists all carrots availible
 listAvailible :: IO String -> IO()
 listAvailible contents = do result <- contents
                             putStrLn result
+
+
+-- See if the package is availible 
+isAvailible :: String -> IO Bool
+isAvailible toCheck =  do x <- readAvailible
+                          if elem toCheck (dropEveryOther (words (unwords (splitOn ":" x)))) 
+                           then return True 
+                           else return False
 
 
 -- Lists all installed carrots
@@ -102,32 +97,6 @@ isInstalled toCheck =  do x <- readInstalled
                            else return False                                      
                                                                     
 
-
--- See if the package is availible 
-isAvailible :: String -> IO Bool
-isAvailible toCheck =  do x <- readAvailible
-                          if elem toCheck (dropEveryOther (words (unwords (splitOn ":" x)))) 
-                           then return True 
-                           else return False
-
-
-
--- Function to remove every other element from a list, used to remove the version when needed
-dropEveryOther :: [a] -> [a]
-dropEveryOther [] = []
-dropEveryOther (x:xs)
-                | null xs = x:[]
-                | otherwise = x:(dropEveryOther (tail xs))
-               
-
-
--- This drops every other starting with the head, instead of the second element                                    
-dropEveryOther' :: [a] -> [a]
-dropEveryOther' [] = []
-dropEveryOther' (x:xs)
-                 | null xs = []
-                 | otherwise = (head xs):dropEveryOther' (tail xs)
-
                          
 
 -- Returns a tuple of availible carrots with (Name, Version)
@@ -144,12 +113,16 @@ getTupleInstalled = do avail <- readInstalled
 
 
 
+
+
+
+
+
 -- Removes the Just from infront of a value so that it can be used easier
 removeJust :: Monad m => m (Maybe b) -> m b
 removeJust x = do value <- x
                   let finally = fromJust value 
                   return finally
-
 
 
 -- Takes the availible package list which is an IO [(String, String)], "unpacks" it
