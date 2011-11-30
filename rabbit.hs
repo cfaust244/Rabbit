@@ -144,18 +144,21 @@ getTupleInstalled = do avail <- readInstalled
 
 
 
--- Make it cleaner to send to putStrLn
+-- Removes the Just from infront of a value so that it can be used easier
 removeJust :: Monad m => m (Maybe b) -> m b
 removeJust x = do value <- x
                   let finally = fromJust value 
                   return finally
 
--- The monad cannot be escaped! (Muhahaha?)
+
+
+-- Takes the availible package list which is an IO [(String, String)], "unpacks" it
+-- Sends it to findPackageVersion and wraps the result back in an IO (Maybe String)
 findWrapper :: String -> IO (Maybe String)
 findWrapper x = do list <- getTupleAvail
                    return (findPackageVersion x list)
 
--- 
+--  Takes a List of Tuples and searches for a match and returns the value (version) attached (like a dictionary)
 findPackageVersion :: (Eq p) => p -> [(p,v)] -> Maybe v  
 findPackageVersion package [] = Nothing  
 findPackageVersion package ((p,v):xs) = if package == p  
