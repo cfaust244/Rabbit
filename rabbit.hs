@@ -5,6 +5,7 @@
 module Main where
 import System.Environment
 import System.IO
+import System.Directory
 import Data.List.Split
 import Data.Maybe
 import Utilities
@@ -32,7 +33,7 @@ clController (x:xs)
                                            then install (head xs)
                                            else putStrLn "Sorry but the requested package isn't availible"
               | x == "update"  = putStrLn "Updating..."
-              | x == "remove"  = uninstall xs
+              | x == "remove"  = uninstall (head xs)
               | x == "help"    = help
               | x == "list-all"= listAvailible $ readAvailible
               | x == "list-installed" = listInstalled $ readInstalled
@@ -49,14 +50,20 @@ install xs = do putStrLn ("Installing " ++ xs)
                 putStrLn ("Package version is: " ++ version)
                 downloadPackage xs              -- TODO handle errors with these
                 extractAndInstallPackage xs
+                writeInstalled (xs ++ ":" ++ version)
                 putStrLn (xs ++ " was a tasty carrot!")
 
 
 -- Verifies it can uninstall the given applications, and then calls the necessary 
 -- functions to perform such operations 
-uninstall :: [String] -> IO()        
-uninstall [] = putStrLn "Please enter what to uninstall"
-uninstall xs  = putStrLn ("Uninstalling " ++ (unwords xs))
+uninstall :: String -> IO()        
+uninstall []  = putStrLn "Please enter what to uninstall"
+uninstall xs  = do putStrLn ("Uninstalling " ++  xs)
+                   isIns <- isInstalled xs
+                   if isIns
+                     then do removePackage xs
+                             putStrLn (xs ++ " was successfully removed, the rabbit is sad")
+                     else putStrLn "That package isn't installed"
 
 
 
@@ -92,11 +99,13 @@ listInstalled contents = do result <- contents
 
 -- See if the package is installed
 isInstalled :: String -> IO Bool
-isInstalled toCheck =  do x <- readInstalled
-                          if elem toCheck (dropEveryOther (words (unwords (splitOn ":" x)))) 
-                           then return True 
-                           else return False                                      
-                                                                    
+isInstalled toCheck =  do check <- doesFileExist "installed.list"
+                          if check 
+                            then do x <- readInstalled
+                                    if elem toCheck (dropEveryOther (words (unwords (splitOn ":" x))))
+                                        then return True
+                                        else return False
+                                      else return False
 
                          
 
