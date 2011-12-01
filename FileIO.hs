@@ -3,11 +3,15 @@ module FileIO
 , readInstalled
 ) where
 
+import System.Directory
+import SystemLevel
 
 -- Reads the carrots.list file and returns an IO String for whatever needs it
 -- TODO: Make more generic so it works on more than one file? 
 readAvailible :: IO String
-readAvailible =  do contents <- readFile "carrots.list"
+readAvailible =  do downloadMaster
+                    setCurrentDirectory "/private/var/tmp/"
+                    contents <- readFile "carrots.list"
                     return contents
 
 

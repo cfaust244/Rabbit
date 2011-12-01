@@ -46,8 +46,10 @@ install :: String -> IO()
 install [] = putStrLn "Please enter what to install"
 install xs = do putStrLn ("Installing " ++ xs)
                 version <- removeJust $ findWrapper xs
-                putStrLn ("Version is: " ++ version)
-
+                putStrLn ("Package version is: " ++ version)
+                downloadPackage xs              -- TODO handle errors with these
+                extractAndInstallPackage xs
+                putStrLn (xs ++ " was a tasty carrot!")
 
 
 -- Verifies it can uninstall the given applications, and then calls the necessary 
@@ -64,7 +66,6 @@ help :: IO()
 help = do putStrLn "install application... installs the application or applications supplied"
           putStrLn "update... updates all installed packages"
           putStrLn "remove application...removes the supplied application or applications"
-
 
 
 
@@ -110,11 +111,6 @@ getTupleAvail = do avail <- readAvailible
 getTupleInstalled :: IO [(String, String)]
 getTupleInstalled = do avail <- readInstalled
                        return $ zip (dropEveryOther (splitOneOf ":'\n'" avail)) (dropEveryOther' (splitOneOf ":'\n'" avail))
-
-
-
-
-
 
 
 
