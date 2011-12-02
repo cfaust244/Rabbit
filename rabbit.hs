@@ -25,76 +25,80 @@ main = do args <- getArgs
 clController :: [String] -> IO()
 clController []   = putStrLn "Enter a command please!"
 clController (x:xs)
-              | x == "install" = do installed <- (isInstalled (head xs))
-                                    availible <- (isAvailible (head xs))
-                                    if installed 
-                                     then putStrLn "This package is already installed" 
-                                     else if availible
-                                           then install (head xs)
-                                           else putStrLn "Sorry but the requested package isn't availible"
+              | x == "install" = install $ head xs
               | x == "update"  = putStrLn "Updating..."
-              | x == "remove"  = uninstall (head xs)
+              | x == "remove"  = remove  $ head xs
               | x == "help"    = help
-              | x == "list-all"= listAvailible $ readAvailible
-              | x == "list-installed" = listInstalled $ readInstalled
+              | x == "list-a"  = listAvailible
+              | x == "list-i"  = listInstalled
               | otherwise = putStrLn "Unknown Command"
 
 
 
 -- Verifies it can install the given applications, and then calls the necessary 
 -- functions to perform such operations 
+-- BTW the case () of _ is because I hate nested if's. They look terrible
 install :: String -> IO()        
-install [] = putStrLn "Please enter what to install"
-install xs = do putStrLn ("Installing " ++ xs)
-                version <- removeJust $ findWrapper xs
-                putStrLn ("Package version is: " ++ version)
-                downloadPackage xs              -- TODO handle errors with these
-                extractAndInstallPackage xs
-                writeInstalled (xs ++ ":" ++ version)
-                putStrLn (xs ++ " was a tasty carrot!")
+install [] = putStrLn "enter a package to install"
+install xs = do installed <- isInstalled xs
+                availible <- isAvailible xs
+                case () of _
+                            | installed == True -> putStrLn "This package is already installed"
+                            | availible == True -> install' xs
+                            | otherwise -> putStrLn "Sorry but the requested package isn't availible"
 
 
--- Verifies it can uninstall the given applications, and then calls the necessary 
--- functions to perform such operations 
-uninstall :: String -> IO()        
-uninstall []  = putStrLn "Please enter what to uninstall"
-uninstall xs  = do putStrLn ("Uninstalling " ++  xs)
-                   isIns <- isInstalled xs
-                   if isIns
-                     then do removePackage xs
-                             removePackFromFile xs
-                             putStrLn (xs ++ " was successfully removed, the rabbit is sad")
-                     else putStrLn "That package isn't installed"
+install' :: String -> IO()
+install' xs = do putStrLn ("Installing " ++ xs)
+                 version <- removeJust $ findWrapper xs
+                 putStrLn ("Package version is: " ++ version)
+                 downloadPackage xs                                -- TODO: Provide useful
+                 extractAndInstallPackage xs                       -- error messages that
+                 writeInstalled (xs ++ ":" ++ version)             -- are "less scary"
+                 putStrLn (xs ++ " was a tasty carrot!")
+
+-- Verifies it can remove the given package
+-- then removes the application
+remove     :: String -> IO()        
+remove []  = putStrLn "Please enter what to remove"
+remove xs  = do putStrLn ("remove " ++  xs)
+                isIns <- isInstalled xs
+                if isIns
+                  then do removePackage xs
+                          removePackFromFile xs
+                          putStrLn (xs ++ " was successfully removed, the rabbit is sad")
+                  else putStrLn "That package isn't installed"
 
 
 
 -- Just prints out a simple help menu
--- TODO: Clean up help menu
 help :: IO()
-help = do putStrLn "install application... installs the application or applications supplied"
-          putStrLn "update... updates all installed packages"
-          putStrLn "remove application...removes the supplied application or applications"
+help = do putStrLn "command: install  - followed by the package you wish to install"
+          putStrLn "command: update   - updates all installed packages"
+          putStrLn "command: remove   - followed by the package you wish to remove"
+          putStrLn "command: list-a   - lists all availible applications"
+          putStrLn "command: list-i   - lists all installed applications"
 
 
 
--- Lists all carrots availible
-listAvailible :: IO String -> IO()
-listAvailible contents = do result <- contents
-                            putStrLn result
+-- Lists all packages availible
+listAvailible :: IO()
+listAvailible = do result <- readAvailible
+                   putStrLn result
 
 
 -- See if the package is availible 
 isAvailible :: String -> IO Bool
 isAvailible toCheck =  do x <- readAvailible
-                          if elem toCheck (dropEveryOther (words (unwords (splitOn ":" x)))) 
+                          if elem toCheck (dropEveryOther (splitOneOf ":'\n'" x)) 
                            then return True 
                            else return False
 
 
 -- Lists all installed carrots
-listInstalled :: IO String -> IO()
-listInstalled contents = do result <- contents
-                            putStrLn result
+listInstalled :: IO()
+listInstalled = do result <- readInstalled
+                   putStrLn result
 
 
 
@@ -103,7 +107,7 @@ isInstalled :: String -> IO Bool
 isInstalled toCheck =  do check <- doesFileExist "installed.list"
                           if check 
                             then do x <- readInstalled
-                                    if elem toCheck (dropEveryOther (words (unwords (splitOn ":" x))))
+                                    if elem toCheck (dropEveryOther (splitOneOf ":'\n'" x)) 
                                         then return True
                                         else return False
                                       else return False

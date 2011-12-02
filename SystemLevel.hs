@@ -14,7 +14,7 @@ import System.Directory
 downloadMaster :: IO ExitCode
 downloadMaster = do tmp <- getTemporaryDirectory
                     setCurrentDirectory tmp
-                    rawSystem "curl" ["-O", "http://www.rabbitbyte.org/repo/carrots.list"]
+                    rawSystem "curl" ["-s", "-O", "http://www.rabbitbyte.org/repo/carrots.list"]
 
 -- Utilize curl which is included with OSX to download repository data
 downloadPackage :: String -> IO ExitCode
@@ -26,7 +26,7 @@ downloadPackage package = do tmp <- getTemporaryDirectory
 downloadPackageList :: String -> IO ExitCode
 downloadPackageList package = do tmp <- getTemporaryDirectory
                                  setCurrentDirectory tmp
-                                 rawSystem "curl" ["-O", "http://www.rabbitbyte.org/repo/" ++ package ++ "/" ++ package ++ ".list"]
+                                 rawSystem "curl" ["-s", "-O", "http://www.rabbitbyte.org/repo/" ++ package ++ "/" ++ package ++ ".list"]
 
 -- Extract the package from .tar.bz2 and place in /Applications
 extractAndInstallPackage :: String -> IO ExitCode
