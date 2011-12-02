@@ -37,3 +37,8 @@ extractAndInstallPackage package = do tmp <- getTemporaryDirectory
 removePackage :: String -> IO ExitCode
 removePackage package = do setCurrentDirectory "/Applications"   -- OSX specific
                            rawSystem "rm" ["-rf", package ++ ".app"]
+
+
+
+                             
+

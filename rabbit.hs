@@ -62,6 +62,7 @@ uninstall xs  = do putStrLn ("Uninstalling " ++  xs)
                    isIns <- isInstalled xs
                    if isIns
                      then do removePackage xs
+                             removePackFromFile xs
                              putStrLn (xs ++ " was successfully removed, the rabbit is sad")
                      else putStrLn "That package isn't installed"
 
@@ -142,3 +143,31 @@ findPackageVersion package [] = Nothing
 findPackageVersion package ((p,v):xs) = if package == p  
                                         then Just v  
                                         else findPackageVersion package xs
+
+
+-- Drops a given package from a list of tuples
+dropPackage :: String -> [(String,String)] -> IO [(String, String)]
+dropPackage package [] = return []
+dropPackage package ((p,v):xs) = if package /= p
+                                 then do back <- dropPackage package xs
+                                         return  ((p,v):back)
+                                 else do back <- dropPackage package xs
+                                         return back
+
+
+-- Makes a new installed.list without the removed package. This is for safety.
+removePackFromFile :: String -> IO ()
+removePackFromFile package = do y <- getTupleInstalled
+                                clean <- (dropPackage package y)
+                                home <- getHomeDirectory
+                                setCurrentDirectory (home ++ "/Desktop/Rabbit") -- TODO change this to ~/Library/Preferences/Rabbit at some point
+                                writeFile "tmpInstalled.list" (backToString clean)
+                                renameFile "installed.list" "oldInstalled.list"
+                                renameFile "tmpInstalled.list" "installed.list"
+                                removeFile "oldInstalled.list"
+
+
+-- Generates a string for writing to the file from a list of tuples
+backToString :: [(String, String)] -> String
+backToString [] = "\n"
+backToString ((p,v):xs) = if (p == "") then "" else p ++ ":" ++ v ++ "\n" ++ (backToString xs) 
