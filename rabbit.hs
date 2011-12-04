@@ -53,9 +53,9 @@ install' :: String -> IO()
 install' xs = do putStrLn ("Installing " ++ xs)
                  version <- removeJust $ findWrapper xs
                  putStrLn ("Package version is: " ++ version)
-                 downloadPackage xs                                -- TODO: Provide useful
-                 extractAndInstallPackage xs                       -- error messages that
-                 writeInstalled (xs ++ ":" ++ version)             -- are "less scary"
+                 downloadPackage xs                                
+                 extractAndInstallPackage xs                       
+                 writeInstalled (xs ++ ":" ++ version)             
                  putStrLn (xs ++ " was a tasty carrot!")
 
 -- Verifies it can remove the given package
@@ -63,10 +63,10 @@ install' xs = do putStrLn ("Installing " ++ xs)
 -- TODO move "Removing package" till after it checks that the package is installed
 remove     :: String -> IO()        
 remove []  = putStrLn "Please enter what to remove"
-remove xs  = do putStrLn ("Removing " ++  xs)
-                isIns <- isInstalled xs
+remove xs  = do isIns <- isInstalled xs
                 if isIns
-                  then do removePackage xs
+                  then do putStrLn ("Removing " ++  xs)
+                          removePackage xs
                           removePackFromFile xs
                           putStrLn (xs ++ " was successfully removed, the rabbit is sad")
                   else putStrLn "That package isn't installed"
@@ -176,5 +176,5 @@ removePackFromFile package = do y <- getTupleInstalled
 
 -- Generates a string for writing to the file from a list of tuples
 backToString :: [(String, String)] -> String
-backToString [] = "\n"
+backToString [] = ""
 backToString ((p,v):xs) = if (p == "") then "" else p ++ ":" ++ v ++ "\n" ++ (backToString xs)
