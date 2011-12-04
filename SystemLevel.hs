@@ -1,7 +1,7 @@
 module SystemLevel
 ( downloadMaster
 , downloadPackage
-, downloadPackageList
+, describe
 , extractAndInstallPackage
 , removePackage
 ) where
@@ -22,11 +22,6 @@ downloadPackage package = do tmp <- getTemporaryDirectory
                              setCurrentDirectory tmp
                              rawSystem "curl" ["-O", "http://www.rabbitbyte.org/repo/" ++ package ++ "/" ++ package ++ ".tar.bz2"]
 
--- Downloads the config file for the requested package -- for update operations
-downloadPackageList :: String -> IO ExitCode
-downloadPackageList package = do tmp <- getTemporaryDirectory
-                                 setCurrentDirectory tmp
-                                 rawSystem "curl" ["-s", "-O", "http://www.rabbitbyte.org/repo/" ++ package ++ "/" ++ package ++ ".list"]
 
 -- Extract the package from .tar.bz2 and place in /Applications
 extractAndInstallPackage :: String -> IO ExitCode
@@ -38,7 +33,9 @@ removePackage :: String -> IO ExitCode
 removePackage package = do setCurrentDirectory "/Applications"   -- OSX specific
                            rawSystem "rm" ["-rf", package ++ ".app"]
 
-
-
-                             
-
+describe :: String -> IO ()
+describe package = do tmp <- getTemporaryDirectory
+                      setCurrentDirectory tmp
+                      rawSystem "curl" ["-s", "-O", "http://www.rabbitbyte.org/repo/" ++ package ++ "/" ++ package ++ ".list"]
+                      contents <- readFile (package ++ ".list")
+                      putStrLn contents

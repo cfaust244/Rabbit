@@ -25,12 +25,13 @@ main = do args <- getArgs
 clController :: [String] -> IO()
 clController []   = putStrLn "Enter a command please!"
 clController (x:xs)
-              | x == "install" = install $ head xs
-              | x == "update"  = putStrLn "Updating..."
-              | x == "remove"  = remove  $ head xs
-              | x == "help"    = help
-              | x == "list-a"  = listAvailible
-              | x == "list-i"  = listInstalled
+              | x == "install"  = install $ head xs
+              | x == "update"   = putStrLn "Updating..."
+              | x == "remove"   = remove  $ head xs
+              | x == "help"     = help
+              | x == "list-a"   = listAvailible
+              | x == "list-i"   = listInstalled
+              | x == "describe" = describe $ head xs
               | otherwise = putStrLn "Unknown Command"
 
 
@@ -59,9 +60,10 @@ install' xs = do putStrLn ("Installing " ++ xs)
 
 -- Verifies it can remove the given package
 -- then removes the application
+-- TODO move "Removing package" till after it checks that the package is installed
 remove     :: String -> IO()        
 remove []  = putStrLn "Please enter what to remove"
-remove xs  = do putStrLn ("remove " ++  xs)
+remove xs  = do putStrLn ("Removing " ++  xs)
                 isIns <- isInstalled xs
                 if isIns
                   then do removePackage xs
@@ -96,6 +98,7 @@ isAvailible toCheck =  do x <- readAvailible
 
 
 -- Lists all installed carrots
+-- TODO - Add check to make sure the installed list exists before trying to read it!
 listInstalled :: IO()
 listInstalled = do result <- readInstalled
                    putStrLn result
@@ -174,4 +177,4 @@ removePackFromFile package = do y <- getTupleInstalled
 -- Generates a string for writing to the file from a list of tuples
 backToString :: [(String, String)] -> String
 backToString [] = "\n"
-backToString ((p,v):xs) = if (p == "") then "" else p ++ ":" ++ v ++ "\n" ++ (backToString xs) 
+backToString ((p,v):xs) = if (p == "") then "" else p ++ ":" ++ v ++ "\n" ++ (backToString xs)
