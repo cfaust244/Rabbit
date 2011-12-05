@@ -30,4 +30,4 @@ readInstalled =  do home <- getHomeDirectory
 writeInstalled :: String -> IO ()
 writeInstalled x = do home <- getHomeDirectory
                       setCurrentDirectory (home ++ "/Desktop/Rabbit")  -- TODO change this to ~/Library/Preferences/Rabbit at some point
-                      appendFile "installed.list" (x ++ "\n")
+                      appendFile "installed.list" x

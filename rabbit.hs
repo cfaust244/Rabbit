@@ -11,6 +11,7 @@ import Data.Maybe
 import Utilities
 import FileIO
 import SystemLevel
+import RabbitParse
 
 
 -- main, just gets the command line args and sends them to the clController
@@ -136,6 +137,8 @@ removeJust :: Monad m => m (Maybe b) -> m b
 removeJust x = do value <- x
                   let finally = fromJust value 
                   return finally
+
+
 
 
 -- Takes the availible package list which is an IO [(String, String)], "unpacks" it

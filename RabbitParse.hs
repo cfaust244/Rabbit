@@ -4,7 +4,7 @@
 -- StackOverflow, LearnYouAHaskell.com and several other websites
 
 module RabbitParse
-( Package
+( Packages
 , readSource
 ) where
 
@@ -15,8 +15,8 @@ import qualified Data.Map as M
 import Data.Either
 import Data.Maybe
 
--- A package is a map of name version so makes sense to have it as a type
-type Package = M.Map String String
+
+type Packages = M.Map String String
 
 
 comment :: Parser ()
@@ -64,13 +64,14 @@ input  = do contents <- many line
         
 
 -- 
-readSource :: String -> IO (Either ParseError Package)
+readSource :: String -> IO (Either ParseError Packages)
 readSource filename = do results <- parseFromFile input filename                -- input is the function above, input represents the entire file
                          return $ case results of
                             Left err -> Left err
                             Right xs -> Right (createMap xs)
 
 
-createMap :: [(String, String)] -> Package
+createMap :: [(String, String)] -> Packages
 createMap [] = M.empty
 createMap ((p,v):xs) = M.insert p v (createMap xs)
+
