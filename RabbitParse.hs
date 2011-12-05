@@ -65,7 +65,7 @@ input  = do contents <- many line
 
 -- 
 readSource :: String -> IO (Either ParseError Package)
-readSource filename = do results <- parseFromFile input filename                 -- input is the function above, input represents the entire file
+readSource filename = do results <- parseFromFile input filename                -- input is the function above, input represents the entire file
                          return $ case results of
                             Left err -> Left err
                             Right xs -> Right (createMap xs)
