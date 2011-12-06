@@ -1,7 +1,0 @@
-11/28/2011
-- NEW DEPENDENCY - Requires Data.List.Split which can be installed using cabal install split
-- Added a function to read the availible carrots
-- Added a function to read the installed carrots
-- Added a function to list all availible carrots
-- Added a function to determine if a carrot is installed or not
-- Added a dropEveryOther function that drops the 2nd, 4th, 6th, 8th elements. (Indexes 1,3,5..)

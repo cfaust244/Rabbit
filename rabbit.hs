@@ -1,183 +1,193 @@
 -- Rabbit OSX Application Manager v1.0
 -- Cody Faust <cfaust244@gmail.com>
--- Uses split from cabal
+
+-- TODO  
+-- correctly match Firefox with firefox (make it a lowercase F)
+
 
 module Main where
-import System.Environment
-import System.IO
-import System.Directory
-import Data.List.Split
-import Data.Maybe
-import Utilities
-import FileIO
-import SystemLevel
+
+
+-- Basic stuff
 import RabbitParse
+import Text.Parsec.Error
+import SystemLevel
+import qualified Data.Map as M
+import System.Directory
 
+-- Pretty terminal
+import System.Console.ANSI
+-- For getArgs
+import System.Environment 
 
--- main, just gets the command line args and sends them to the clController
+-- Gathers arguments, checks if its the first run, and sets the working directory
 main :: IO()
 main = do args <- getArgs
+          home <- getHomeDirectory
+          firstRun <- doesDirectoryExist (home ++ "/.rabbit")
+          if firstRun 
+            then setRabbitDir
+            else do createDirectory (home ++ "/.rabbit")
+                    setRabbitDir
           clController args
 
 
 
 -- Decides what action to perform based on the arguments given
--- TODO: Allow for the user to install more than one carrot at a time, it currently discards any extras
 clController :: [String] -> IO()
 clController []   = putStrLn "Enter a command please!"
 clController (x:xs)
               | x == "install"  = install $ head xs
-              | x == "update"   = putStrLn "Updating..."
               | x == "remove"   = remove  $ head xs
               | x == "help"     = help
-              | x == "list-a"   = listAvailible
-              | x == "list-i"   = listInstalled
-              | x == "describe" = describe $ head xs
-              | otherwise = putStrLn "Unknown Command"
+              | x == "describe" = describe $ head xs 
+              | x == "list-i"   = printInstalled
+              | x == "list-a"   = printAvailible
+              | otherwise       = putStrLn "Unknown command type help for a list of commands"
 
 
 
--- Verifies it can install the given applications, and then calls the necessary 
--- functions to perform such operations 
--- BTW the case () of _ is because I hate nested if's. They look terrible
-install :: String -> IO()        
-install [] = putStrLn "enter a package to install"
-install xs = do installed <- isInstalled xs
-                availible <- isAvailible xs
-                case () of _
-                            | installed == True -> putStrLn "This package is already installed"
-                            | availible == True -> install' xs
-                            | otherwise -> putStrLn "Sorry but the requested package isn't availible"
+-- Verifies it can install the package
+-- TODO: Work on the indentation here..goes past 80 characters...
+install :: String -> IO()
+install package  = do ins <- isInstalled package
+                      avl <- isAvailible package
+                      case () of _
+                                  | ins == True  -> putStrLn "Package is already installed!"
+                                  | avl == False -> putStrLn "Package isn't availible!"
+                                  | otherwise -> do p <- handleErrors $ readSource "carrots.list"
+                                                    v <- getVersion package p
+                                                    putStrLn ("Package name: " ++ package)
+                                                    putStrLn ("Package version: " ++ (show v))
+                                                    downloadPackage package
+                                                    extractAndInstallPackage package
+                                                    addToSources package (show v)
+                                                    return ()
 
+-- Checks if the package can be removed, if so calls the removePackage function
+remove :: String -> IO()
+remove package = do ins <- isInstalled package
+                    if ins
+                      then removePackage package
+                      else putStrLn "Package isn't currently installed!"
 
-install' :: String -> IO()
-install' xs = do putStrLn ("Installing " ++ xs)
-                 version <- removeJust $ findWrapper xs
-                 putStrLn ("Package version is: " ++ version)
-                 downloadPackage xs                                
-                 extractAndInstallPackage xs                       
-                 writeInstalled (xs ++ ":" ++ version)             
-                 putStrLn (xs ++ " was a tasty carrot!")
+-- Prints the help message (kinda obvious)
+help :: IO ()
+help = do putStrLn "install  -> installs the requested application"
+          putStrLn "remove   -> removes the requested application"
+          putStrLn "update   -> updates ALL installed applications"
+          putStrLn "describe -> describes the requested application"
+          putStrLn "list-a   -> lists all AVAILIBLE applications"
+          putStrLn "list-i   -> lists all INSTALLED applications"
+          putStrLn "help     -> lists this help menu"
+           
 
--- Verifies it can remove the given package
--- then removes the application
--- TODO move "Removing package" till after it checks that the package is installed
-remove     :: String -> IO()        
-remove []  = putStrLn "Please enter what to remove"
-remove xs  = do isIns <- isInstalled xs
-                if isIns
-                  then do putStrLn ("Removing " ++  xs)
-                          removePackage xs
-                          removePackFromFile xs
-                          putStrLn (xs ++ " was successfully removed, the rabbit is sad")
-                  else putStrLn "That package isn't installed"
-
-
-
--- Just prints out a simple help menu
-help :: IO()
-help = do putStrLn "command: install  - followed by the package you wish to install"
-          putStrLn "command: update   - updates all installed packages"
-          putStrLn "command: remove   - followed by the package you wish to remove"
-          putStrLn "command: list-a   - lists all availible applications"
-          putStrLn "command: list-i   - lists all installed applications"
-
-
-
--- Lists all packages availible
-listAvailible :: IO()
-listAvailible = do result <- readAvailible
-                   putStrLn result
-
-
--- See if the package is availible 
-isAvailible :: String -> IO Bool
-isAvailible toCheck =  do x <- readAvailible
-                          if elem toCheck (dropEveryOther (splitOneOf ":'\n'" x)) 
-                           then return True 
-                           else return False
-
-
--- Lists all installed carrots
--- TODO - Add check to make sure the installed list exists before trying to read it!
-listInstalled :: IO()
-listInstalled = do result <- readInstalled
-                   putStrLn result
-
-
-
--- See if the package is installed
+-- Returns a boolean representing the installed state
 isInstalled :: String -> IO Bool
-isInstalled toCheck =  do check <- doesFileExist "installed.list"
-                          if check 
-                            then do x <- readInstalled
-                                    if elem toCheck (dropEveryOther (splitOneOf ":'\n'" x)) 
-                                        then return True
-                                        else return False
-                                      else return False
+isInstalled package = do check <- doesFileExist "installed.list"
+                         case check of
+                              True  -> do a <- handleErrors $ readSource "installed.list"
+                                          if M.null a
+                                              then return False
+                                              else return $ M.member package a
+                              False -> return False
 
-                         
-
--- Returns a tuple of availible carrots with (Name, Version)
-getTupleAvail :: IO [(String, String)]
-getTupleAvail = do avail <- readAvailible
-                   return $ zip (dropEveryOther (splitOneOf ":'\n'" avail)) (dropEveryOther' (splitOneOf ":'\n'" avail))
-
-
-
--- Returns a tuple of installed carrots with (Name, Version)
-getTupleInstalled :: IO [(String, String)]
-getTupleInstalled = do avail <- readInstalled
-                       return $ zip (dropEveryOther (splitOneOf ":'\n'" avail)) (dropEveryOther' (splitOneOf ":'\n'" avail))
-
-
-
--- Removes the Just from infront of a value so that it can be used easier
-removeJust :: Monad m => m (Maybe b) -> m b
-removeJust x = do value <- x
-                  let finally = fromJust value 
-                  return finally
-
-
-
-
--- Takes the availible package list which is an IO [(String, String)], "unpacks" it
--- Sends it to findPackageVersion and wraps the result back in an IO (Maybe String)
-findWrapper :: String -> IO (Maybe String)
-findWrapper x = do list <- getTupleAvail
-                   return (findPackageVersion x list)
-
---  Takes a List of Tuples and searches for a match and returns the value (version) attached (like a dictionary)
-findPackageVersion :: (Eq p) => p -> [(p,v)] -> Maybe v  
-findPackageVersion package [] = Nothing  
-findPackageVersion package ((p,v):xs) = if package == p  
-                                        then Just v  
-                                        else findPackageVersion package xs
+-- Returns a boolean representing the availible state
+isAvailible :: String -> IO Bool
+isAvailible package = do downloadMaster
+                         check <- doesFileExist "carrots.list"
+                         case check of
+                            True -> do a <- handleErrors $ readSource "carrots.list"
+                                       if M.null a 
+                                           then return False
+                                           else return $ M.member package a
+                            False -> return False
+                           
+-- Prints all installed applications to the screen               
+printInstalled :: IO()
+printInstalled = do check <- doesFileExist "installed.list"
+                    if check
+                      then do ins <- handleErrors $ readSource "installed.list"
+                              let installed = M.toList ins
+                              setSGR [ SetConsoleIntensity BoldIntensity
+                                     , SetColor Foreground Vivid Red
+                                     ]
+                              putStrLn "\nInstalled Packages: \n"
+                              setSGR [ SetConsoleIntensity BoldIntensity
+                                     , SetColor Foreground Vivid Blue
+                                     ]
+                              putStrLn $ generatePrettyString installed
+                              setSGR [Reset]
+                      else do setSGR [ SetConsoleIntensity BoldIntensity
+                                     , SetColor Foreground Vivid Red
+                                     ]
+                              putStrLn "Installed Packages: \n"
+                              setSGR[Reset]
 
 
--- Drops a given package from a list of tuples
-dropPackage :: String -> [(String,String)] -> IO [(String, String)]
-dropPackage package [] = return []
-dropPackage package ((p,v):xs) = if package /= p
-                                 then do back <- dropPackage package xs
-                                         return  ((p,v):back)
-                                 else do back <- dropPackage package xs
-                                         return back
+-- Prints all availible applications to the screen
+printAvailible :: IO()
+printAvailible = do downloadMaster
+                    ins <- handleErrors $ readSource "carrots.list"
+                    let aval = M.toList ins
+                    setSGR [ SetConsoleIntensity BoldIntensity
+                           , SetColor Foreground Vivid Red
+                           ]
+                    putStrLn "\nAvailible Packages: \n"
+                    setSGR [ SetConsoleIntensity BoldIntensity
+                           , SetColor Foreground Vivid Blue
+                           ]
+                    putStrLn $ generatePrettyString aval
+                    setSGR [Reset]
 
 
--- Makes a new installed.list without the removed package. This is for safety.
-removePackFromFile :: String -> IO ()
-removePackFromFile package = do y <- getTupleInstalled
-                                clean <- (dropPackage package y)
-                                home <- getHomeDirectory
-                                setCurrentDirectory (home ++ "/Desktop/Rabbit") -- TODO change this to ~/Library/Preferences/Rabbit at some point
-                                writeFile "tmpInstalled.list" (backToString clean)
-                                renameFile "installed.list" "oldInstalled.list"
-                                renameFile "tmpInstalled.list" "installed.list"
-                                removeFile "oldInstalled.list"
+-- Creates a string representing an installed package and calls writeInstalled
+addToSources :: String -> String -> IO ()
+addToSources package version = writeInstalled (package ++ " = " ++ version ++ "\n")
 
 
--- Generates a string for writing to the file from a list of tuples
-backToString :: [(String, String)] -> String
-backToString [] = ""
-backToString ((p,v):xs) = if (p == "") then "" else p ++ ":" ++ v ++ "\n" ++ (backToString xs)
+-- Returns -1 if a problem occurs, if you get this the caller 
+-- should really check it exists BEFORE
+-- Asking for the version from this
+getVersion :: String -> Packages -> IO Int
+getVersion package ps = do let x = M.findWithDefault "-1" package ps
+                           return (read x::Int) 
+
+
+-- Handle any error messages generated by the parser
+handleErrors :: IO (Either ParseError Packages) -> IO Packages
+handleErrors xs = do x <- xs
+                     case x of
+                              Left x   -> do putStrLn (show x)
+                                             return M.empty
+                              Right x  ->    return $ x
+
+
+-- Deletes the requested package and updates installed.list 
+removePackage :: String -> IO()
+removePackage package = do ins <- handleErrors $ readSource "installed.list"
+                           let cleaned = M.toList (M.delete package ins)
+                           writeFile "tmpInstalled.list" $ generateString cleaned
+                           deletePackage package
+                           copyFile "installed.list" "backup.list"
+                           renameFile "tmpInstalled.list" "installed.list"
+                           return ()
+
+
+-- Writes the given string to installed.list
+writeInstalled :: String -> IO ()
+writeInstalled x = do appendFile "installed.list" x
+
+
+-- Gives us a string to write back to a file
+generateString :: [(String, String)] -> String
+generateString [] = ""
+generateString ((p,v):xs) = p ++ " = " ++ v ++ "\n" ++ (generateString xs)
+
+
+-- Gives us a string formatted for printing to the screen
+generatePrettyString :: [(String, String)] -> String
+generatePrettyString [] = ""
+generatePrettyString ((p,v):xs) = "Package: " ++  p ++ 
+                                    "                   \t-> Version: " ++ 
+                                    v ++ "\n" ++ (generatePrettyString xs)
