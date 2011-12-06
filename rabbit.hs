@@ -2,7 +2,7 @@
 -- Cody Faust <cfaust244@gmail.com>
 
 -- TODO  
--- correctly match Firefox with firefox (make it a lowercase F) 
+-- correctly match Firefox with firefox (make it a lowercase F)
 
 
 module Main where
@@ -53,33 +53,47 @@ install :: String -> IO()
 install package  = do ins <- isInstalled package
                       avl <- isAvailible package
                       case () of _
-                                  | ins == True  -> putStrLn "Package is already installed!"
-                                  | avl == False -> putStrLn "Package isn't availible!"
+                                  | ins == True  -> do setANSIred
+                                                       putStrLn "\nPackage is already installed!\n"
+                                                       resetANSI
+                                  | avl == False -> do setANSIred
+                                                       putStrLn "\nPackage isn't availible!"
+                                                       resetANSI
                                   | otherwise -> do p <- handleErrors $ readSource "carrots.list"
                                                     v <- getVersion package p
-                                                    putStrLn ("Package name: " ++ package)
-                                                    putStrLn ("Package version: " ++ (show v))
+                                                    setANSIblue
+                                                    putStrLn ("\nPackage name: " ++ package)
+                                                    putStrLn ("Package version: " ++ (show v) ++ "\n")
                                                     downloadPackage package
                                                     extractAndInstallPackage package
                                                     addToSources package (show v)
+                                                    putStrLn ("\n" ++ package ++ " successfully installed!\n")
+                                                    resetANSI
                                                     return ()
 
 -- Checks if the package can be removed, if so calls the removePackage function
 remove :: String -> IO()
 remove package = do ins <- isInstalled package
                     if ins
-                      then removePackage package
-                      else putStrLn "Package isn't currently installed!"
+                      then do setANSIblue
+                              putStrLn ("\nRemoving: " ++ package ++ "\n")
+                              resetANSI
+                              removePackage package
+                      else do setANSIred
+                              putStrLn "\nPackage isn't currently installed!\n"
+                              resetANSI
 
 -- Prints the help message (kinda obvious)
 help :: IO ()
-help = do putStrLn "install  -> installs the requested application"
+help = do setANSIblue 
+          putStrLn "\ninstall  -> installs the requested application"
           putStrLn "remove   -> removes the requested application"
           putStrLn "update   -> updates ALL installed applications"
           putStrLn "describe -> describes the requested application"
           putStrLn "list-a   -> lists all AVAILIBLE applications"
           putStrLn "list-i   -> lists all INSTALLED applications"
-          putStrLn "help     -> lists this help menu"
+          putStrLn "help     -> lists this help menu\n"
+          resetANSI
            
 
 -- Returns a boolean representing the installed state
@@ -109,20 +123,13 @@ printInstalled = do check <- doesFileExist "installed.list"
                     if check
                       then do ins <- handleErrors $ readSource "installed.list"
                               let installed = M.toList ins
-                              setSGR [ SetConsoleIntensity BoldIntensity
-                                     , SetColor Foreground Vivid Red
-                                     ]
+                              setANSIblue
                               putStrLn "\nInstalled Packages: \n"
-                              setSGR [ SetConsoleIntensity BoldIntensity
-                                     , SetColor Foreground Vivid Blue
-                                     ]
                               putStrLn $ generatePrettyString installed
-                              setSGR [Reset]
-                      else do setSGR [ SetConsoleIntensity BoldIntensity
-                                     , SetColor Foreground Vivid Red
-                                     ]
+                              resetANSI
+                      else do setANSIblue
                               putStrLn "Installed Packages: \n"
-                              setSGR[Reset]
+                              resetANSI
 
 
 -- Prints all availible applications to the screen
@@ -130,15 +137,10 @@ printAvailible :: IO()
 printAvailible = do downloadMaster
                     ins <- handleErrors $ readSource "carrots.list"
                     let aval = M.toList ins
-                    setSGR [ SetConsoleIntensity BoldIntensity
-                           , SetColor Foreground Vivid Red
-                           ]
+                    setANSIblue
                     putStrLn "\nAvailible Packages: \n"
-                    setSGR [ SetConsoleIntensity BoldIntensity
-                           , SetColor Foreground Vivid Blue
-                           ]
                     putStrLn $ generatePrettyString aval
-                    setSGR [Reset]
+                    resetANSI
 
 
 -- Creates a string representing an installed package and calls writeInstalled
@@ -191,3 +193,19 @@ generatePrettyString [] = ""
 generatePrettyString ((p,v):xs) = "Package: " ++  p ++ 
                                     "                   \t-> Version: " ++ 
                                     v ++ "\n" ++ (generatePrettyString xs)
+
+
+setANSIblue :: IO()
+setANSIblue = setSGR [ SetConsoleIntensity BoldIntensity
+                     , SetColor Foreground Vivid Blue
+                     ]
+
+                     
+setANSIred :: IO()
+setANSIred = setSGR [ SetConsoleIntensity BoldIntensity
+                    , SetColor Foreground Vivid Red
+                    ]
+
+
+resetANSI :: IO()
+resetANSI = setSGR [Reset]

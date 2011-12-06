@@ -12,7 +12,7 @@ import GHC.IO.Exception
 import System.Cmd
 import System.Directory
 
--- System level commands should always return the directory to the RabbitDir when finished 
+-- System level commands should always return the directory to the RabbitDir when finished
 downloadMaster :: IO ExitCode
 downloadMaster = rawSystem "curl" ["-s", "-O", "http://www.rabbitbyte.org/repo/carrots.list"]
                  
