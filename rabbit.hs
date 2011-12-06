@@ -40,9 +40,12 @@ clController (x:xs)
               | x == "install"  = install $ head xs
               | x == "remove"   = remove  $ head xs
               | x == "help"     = help
-              | x == "describe" = describe $ head xs 
+              | x == "describe" = do setANSIblue
+                                     describe $ head xs
+                                     resetANSI 
               | x == "list-i"   = printInstalled
               | x == "list-a"   = printAvailible
+              | x == "update"   = update
               | otherwise       = putStrLn "Unknown command type help for a list of commands"
 
 
@@ -138,7 +141,8 @@ printAvailible = do downloadMaster
                     ins <- handleErrors $ readSource "carrots.list"
                     let aval = M.toList ins
                     setANSIblue
-                    putStrLn "\nAvailible Packages: \n"
+                    putStrLn "\nAvailible Packages: "
+                    putStrLn "Remember, these are PACKAGE versions, use describe to find the software version\n"
                     putStrLn $ generatePrettyString aval
                     resetANSI
 
@@ -174,6 +178,69 @@ removePackage package = do ins <- handleErrors $ readSource "installed.list"
                            copyFile "installed.list" "backup.list"
                            renameFile "tmpInstalled.list" "installed.list"
                            return ()
+
+
+
+
+-- Updates all installed packages
+update :: IO()
+update = do check <- doesFileExist "installed.list"
+            if check
+              then do ins <- handleErrors $ readSource "installed.list"
+                      downloadMaster
+                      avl <- handleErrors $ readSource "carrots.list"
+                      packages <- update' ins avl
+                      doUpdate packages
+              else return ()
+
+update' :: Packages -> Packages -> IO [String]
+update' ins avl = do let first  = M.intersection ins avl 
+                     let second = M.intersection avl ins
+                     --putStrLn ("Installed: " ++ (show $ M.toList first))
+                     --putStrLn ("Availible: " ++ (show $ M.toList second))
+                     let new = M.differenceWith diff first second
+                     --putStrLn ("To Update: " ++ (show $ M.toList new))
+                     let packages = M.keys new
+                     if null packages 
+                       then do setANSIblue
+                               putStrLn "\nNothing to update!\n"
+                               resetANSI
+                               return []
+                       else return packages
+                     return packages
+
+           
+doUpdate :: [String] -> IO()
+doUpdate []     = return ()
+doUpdate (x:xs) = do removeOutdated x
+                     installUpdates x
+                     doUpdate xs                      
+                     
+
+installUpdates :: String -> IO()
+installUpdates package = do setANSIblue
+                            p <- handleErrors $ readSource "carrots.list"
+                            v <- getVersion package p
+                            putStrLn ("\nUpdating  " ++ package)
+                            putStrLn ("Updated version: " ++ (show v) ++ "\n")
+                            downloadPackage package
+                            extractAndInstallPackage package
+                            addToSources package (show v)
+                            resetANSI
+                            return ()
+
+
+removeOutdated :: String -> IO()
+removeOutdated package = do setANSIblue
+                            putStrLn ("\nRemoving old: " ++ package ++ "\n")
+                            resetANSI
+                            removePackage package
+
+
+diff :: (Eq a) => a -> a -> Maybe a 
+diff iv av = if iv == av then Nothing else Just av
+
+
 
 
 -- Writes the given string to installed.list
