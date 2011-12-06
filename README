@@ -6,7 +6,7 @@ package managers can already do that.
 License:
 Rabbit is licensed under the GNU GPL v3, which can be located here: http://www.gnu.org/copyleft/gpl.html
 
-Building: Requires the Haskell-platform (obviously) and split from cabal
+Building: Requires the Haskell-platform (obviously), ansi-terminal and parsec from cabal 
 
 Packaging: carrots.list will contain a list of packages of the form firefox:801 where 801 represents the version 8.0.1. If the applications version numbering scheme doesn't work well with this then decide on another scheme as long as the version number increases with each release. 
 
