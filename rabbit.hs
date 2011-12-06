@@ -2,7 +2,7 @@
 -- Cody Faust <cfaust244@gmail.com>
 
 -- TODO  
--- correctly match Firefox with firefox (make it a lowercase F)
+-- correctly match Firefox with firefox (make it a lowercase F) 
 
 
 module Main where

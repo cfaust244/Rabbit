@@ -1,7 +1,7 @@
 -- Author: Cody Faust <cfaust244@gmail.com>
 -- Description: More error resiliant parser for Rabbit
 -- Special thanks to "Graham Hutton's - Programming in Haskell", Professor Andy Gill
--- StackOverflow, LearnYouAHaskell.com and several other websites
+-- StackOverflow, LearnYouAHaskell.com and several other websites 
 
 module RabbitParse
 ( Packages
