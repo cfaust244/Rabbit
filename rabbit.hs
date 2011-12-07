@@ -40,9 +40,6 @@ clController (x:xs)
               | x == "install"  = install $ head xs
               | x == "remove"   = remove  $ head xs
               | x == "help"     = help
-              | x == "describe" = do setANSIblue
-                                     describe $ head xs
-                                     resetANSI
               | x == "search"   = search $ head xs
               | x == "list-i"   = printInstalled
               | x == "list-a"   = printAvailible
@@ -103,7 +100,7 @@ help = do setANSIblue
           putStrLn "\ninstall  -> installs the requested application"
           putStrLn "remove   -> removes the requested application"
           putStrLn "update   -> updates ALL installed applications"
-          putStrLn "describe -> describes the requested application"
+          putStrLn "search   -> describes the requested application if its availible"
           putStrLn "list-a   -> lists all AVAILIBLE applications"
           putStrLn "list-i   -> lists all INSTALLED applications"
           putStrLn "help     -> lists this help menu\n"
