@@ -42,13 +42,24 @@ clController (x:xs)
               | x == "help"     = help
               | x == "describe" = do setANSIblue
                                      describe $ head xs
-                                     resetANSI 
+                                     resetANSI
+              | x == "search"   = search $ head xs
               | x == "list-i"   = printInstalled
               | x == "list-a"   = printAvailible
               | x == "update"   = update
               | otherwise       = putStrLn "Unknown command type help for a list of commands"
 
 
+
+search :: String -> IO()
+search package = do x <- isAvailible package
+                    if x
+                      then do setANSIblue
+                              describe package
+                              resetANSI
+                      else do setANSIred
+                              putStrLn "\nSorry, no packages by that name. I am a sad rabbit.\n"
+                              resetANSI
 
 -- Verifies it can install the package
 -- TODO: Work on the indentation here..goes past 80 characters...
