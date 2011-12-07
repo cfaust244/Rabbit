@@ -150,7 +150,7 @@ printAvailible = do downloadMaster
                     let aval = M.toList ins
                     setANSIblue
                     putStrLn "\nAvailible Packages: "
-                    putStrLn "Remember, these are PACKAGE versions, use describe to find the software version\n"
+                    putStrLn "Remember, these are PACKAGE versions, use search to find the software version\n"
                     putStrLn $ generatePrettyString aval
                     resetANSI
 
